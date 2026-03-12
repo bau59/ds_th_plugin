@@ -21,6 +21,19 @@ export default class AuthorTopicBumpButton extends Component {
     return this.args.post?.topic_id || this.args.post?.topic?.id;
   }
 
+  async requestBump(topicId) {
+    try {
+      await ajax(`/t/${topicId}/bump`, { type: "PUT" });
+      return;
+    } catch (error) {
+      if (error?.jqXHR?.status !== 404) {
+        throw error;
+      }
+    }
+
+    await ajax(`/t/${topicId}/reset-bump-date`, { type: "PUT" });
+  }
+
   @action
   async bumpTopic() {
     if (!this.topicId || this.isLoading) {
@@ -30,7 +43,7 @@ export default class AuthorTopicBumpButton extends Component {
     this.isLoading = true;
 
     try {
-      await ajax(`/t/${this.topicId}/bump`, { type: "PUT" });
+      await this.requestBump(this.topicId);
     } catch (error) {
       popupAjaxError(error);
     } finally {
@@ -45,7 +58,7 @@ export default class AuthorTopicBumpButton extends Component {
       @action={{this.bumpTopic}}
       @disabled={{this.isLoading}}
       @icon={{if this.isLoading "spinner" "arrow-up"}}
-      @title="author_topic_bump_button.title"
+      @title="js.author_topic_bump_button.title"
     />
   </template>
 }
