@@ -21,13 +21,18 @@
 - Таймер считается от `topic.bumped_at`.
 - Настройки компонента:
   - `bump_interval_hours_default` — интервал по умолчанию (часы);
-  - `group_bump_intervals_structured` — **рекомендуемый** способ: правила через выбор групп форума в UI (`groups` + `interval_hours`);
-  - приоритет: `group_bump_intervals_structured` → default;
+  - `admin_bump_interval_hours` — интервал для админов (`-1` = не переопределять);
+  - `moderator_bump_interval_hours` — интервал для модераторов (`-1` = не переопределять);
+  - `group_bump_intervals_structured` — по одной группе на правило (группа + часы);
   - `show_success_modal` — показывать ли модалку после успеха.
+- Приоритет интервалов:
+  1. `admin_bump_interval_hours` (если пользователь админ и значение >= 0)
+  2. `moderator_bump_interval_hours` (если пользователь модератор/staff и значение >= 0)
+  3. `group_bump_intervals_structured`
+  4. `bump_interval_hours_default`
 
 ## Важно
 - Для `POST /t/:topic_id/timer` параметр `time` должен быть строго в будущем.
-
 
 ## Примечание по надежности таймера
 - В topic-view не всегда приходит `bumped_at`, поэтому компонент использует `last_posted_at` как fallback и локально запоминает время последнего успешного поднятия для текущего топика (в `localStorage`), чтобы cooldown/таймер срабатывал сразу.

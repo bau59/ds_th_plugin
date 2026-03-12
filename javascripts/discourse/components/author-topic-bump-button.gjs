@@ -50,13 +50,14 @@ function parseStructuredGroupIntervals(raw) {
       const groups = Array.isArray(row?.groups)
         ? row.groups.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
         : [];
+      const groupId = groups[0];
       const intervalHours = Number(row?.interval_hours);
 
-      if (!groups.length || Number.isNaN(intervalHours) || intervalHours < 0) {
+      if (!groupId || Number.isNaN(intervalHours) || intervalHours < 0) {
         return null;
       }
 
-      return { groups, intervalHours };
+      return { groupId, intervalHours };
     })
     .filter(Boolean);
 }
@@ -138,6 +139,22 @@ export default class AuthorTopicBumpButton extends Component {
     return parseStructuredGroupIntervals(settings.group_bump_intervals_structured);
   }
 
+  get structuredGroupIntervalMap() {
+    // last duplicate row for a group wins
+    return this.structuredGroupIntervals.reduce((map, row) => {
+      map.set(row.groupId, row.intervalHours);
+      return map;
+    }, new Map());
+  }
+
+  get adminIntervalHours() {
+    return Number(settings.admin_bump_interval_hours);
+  }
+
+  get moderatorIntervalHours() {
+    return Number(settings.moderator_bump_interval_hours);
+  }
+
   get intervalHours() {
     const defaultHours = Math.max(0, Number(settings.bump_interval_hours_default || 0));
     const user = this.currentUser;
@@ -146,17 +163,22 @@ export default class AuthorTopicBumpButton extends Component {
       return defaultHours;
     }
 
-    const groups = Array.isArray(user.groups) ? user.groups : [];
-    const userGroupIds = new Set(
-      groups
-        .map((group) => Number(group?.id))
-        .filter((groupId) => Number.isInteger(groupId) && groupId > 0)
-    );
+    // explicit role overrides have highest priority
+    if (user.admin && this.adminIntervalHours >= 0) {
+      return this.adminIntervalHours;
+    }
 
-    // preferred UI-driven rules (groups selected from forum group picker)
-    for (const rule of this.structuredGroupIntervals) {
-      if (rule.groups.some((id) => userGroupIds.has(id))) {
-        return rule.intervalHours;
+    if ((user.moderator || user.staff) && this.moderatorIntervalHours >= 0) {
+      return this.moderatorIntervalHours;
+    }
+
+    const groups = Array.isArray(user.groups) ? user.groups : [];
+    const groupMap = this.structuredGroupIntervalMap;
+
+    for (const group of groups) {
+      const groupId = Number(group?.id);
+      if (Number.isInteger(groupId) && groupMap.has(groupId)) {
+        return groupMap.get(groupId);
       }
     }
 
