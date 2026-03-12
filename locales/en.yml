@@ -1,0 +1,7 @@
+en:
+  author_topic_bump_button:
+    title: "Bump topic"
+    success_scheduled: "Topic bump has been scheduled and will appear soon"
+    success_modal: "Topic bump has been scheduled. It will move up in topic lists shortly."
+    cooldown_title: "Next bump will be available later"
+    cooldown_label: "In %{time}"
