@@ -7,17 +7,19 @@
   - в **первом посте темы**;
   - если текущий пользователь — **автор темы**;
   - если тема не закрыта.
-- При нажатии использует **core endpoint** `PUT /t/:topic_id/reset-bump-date`.
-- Если инстанс отвечает ошибкой на core endpoint (например из-за кастомной конфигурации), пробует альтернативу `PUT /t/:topic_id/bump`.
+- При нажатии пробует endpoint'ы в таком порядке:
+  1. `PUT /t/:topic_id/bump` (если есть на инстансе/в плагине);
+  2. `POST /t/:topic_id/timer` с `status_type=bump` и `time=now` (core способ автоподнятия);
+  3. `PUT /t/:topic_id/reset-bump-date` как последний fallback.
 - Во время запроса кнопка блокируется.
 
-## Важно про права
-- В актуальном core Discourse изменение bump date контролируется правами (`can_update_bumped_at`), обычно это staff/TL4.
-- Если прав недостаточно, Discourse вернет ошибку доступа.
+## Почему раньше было «200 OK, но ничего не меняется»
+- `reset-bump-date` в core Discourse сбрасывает `bumped_at` к дате последнего поста, а не обязательно поднимает тему «прямо сейчас».
+- Поэтому этот endpoint оставлен только как fallback.
 
 ## Технически
 - Используется современный API `registerValueTransformer("post-menu-buttons")` и theme-namespace ключи переводов через `themePrefix(...)`.
-- Устаревший widget API не используется (исправление предупреждения `discourse.widgets-decommissioned`).
+- Устаревший widget API не используется.
 
 ## Установка
 1. В админке Discourse откройте `Customize → Themes`.

@@ -43,9 +43,9 @@ export default class AuthorTopicBumpButton extends Component {
   }
 
   async requestBump(topicId) {
-    // Core Discourse endpoint (present in modern versions)
+    // 1) Some instances/plugins expose direct bump endpoint.
     try {
-      await ajax(`/t/${topicId}/reset-bump-date`, { type: "PUT" });
+      await ajax(`/t/${topicId}/bump`, { type: "PUT" });
       return;
     } catch (error) {
       if (!shouldTryAlternativeEndpoint(error)) {
@@ -53,8 +53,24 @@ export default class AuthorTopicBumpButton extends Component {
       }
     }
 
-    // Optional/plugin-specific endpoint (not present on many instances)
-    await ajax(`/t/${topicId}/bump`, { type: "PUT" });
+    // 2) Core Discourse way to schedule an auto-bump.
+    try {
+      await ajax(`/t/${topicId}/timer`, {
+        type: "POST",
+        data: {
+          status_type: "bump",
+          time: new Date().toISOString(),
+        },
+      });
+      return;
+    } catch (error) {
+      if (!shouldTryAlternativeEndpoint(error)) {
+        throw error;
+      }
+    }
+
+    // 3) Last resort endpoint (does not always move topic up to "now").
+    await ajax(`/t/${topicId}/reset-bump-date`, { type: "PUT" });
   }
 
   @action
