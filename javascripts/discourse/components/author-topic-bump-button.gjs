@@ -45,6 +45,8 @@ function parseStructuredGroupIntervals(raw) {
         }
       })();
 
+  const seenGroupIds = new Set();
+
   return rows
     .map((row) => {
       const groups = Array.isArray(row?.groups)
@@ -57,6 +59,12 @@ function parseStructuredGroupIntervals(raw) {
         return null;
       }
 
+      // enforce one effective value per group (first rule wins)
+      if (seenGroupIds.has(groupId)) {
+        return null;
+      }
+
+      seenGroupIds.add(groupId);
       return { groupId, intervalHours };
     })
     .filter(Boolean);
@@ -140,7 +148,7 @@ export default class AuthorTopicBumpButton extends Component {
   }
 
   get structuredGroupIntervalMap() {
-    // last duplicate row for a group wins
+    // one effective value per group (duplicates ignored)
     return this.structuredGroupIntervals.reduce((map, row) => {
       map.set(row.groupId, row.intervalHours);
       return map;
