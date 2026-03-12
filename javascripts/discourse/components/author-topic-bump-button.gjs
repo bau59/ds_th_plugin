@@ -19,7 +19,11 @@ function responseStatus(error) {
 function shouldTryAlternativeEndpoint(error) {
   const status = responseStatus(error);
 
-  return status === 403 || status === 404 || status === 405;
+  return status === 400 || status === 403 || status === 404 || status === 405;
+}
+
+function oneMinuteFromNowISO() {
+  return new Date(Date.now() + 60 * 1000).toISOString();
 }
 
 export default class AuthorTopicBumpButton extends Component {
@@ -27,6 +31,10 @@ export default class AuthorTopicBumpButton extends Component {
 
   static shouldRender({ post, state }) {
     if (!state.currentUser || !post || post.post_number !== 1) {
+      return false;
+    }
+
+    if (!state.currentUser.canManageTopic) {
       return false;
     }
 
@@ -43,23 +51,13 @@ export default class AuthorTopicBumpButton extends Component {
   }
 
   async requestBump(topicId) {
-    // 1) Some instances/plugins expose direct bump endpoint.
-    try {
-      await ajax(`/t/${topicId}/bump`, { type: "PUT" });
-      return;
-    } catch (error) {
-      if (!shouldTryAlternativeEndpoint(error)) {
-        throw error;
-      }
-    }
-
-    // 2) Core Discourse way to schedule an auto-bump.
+    // 1) Core Discourse: schedule auto-bump. `time` must be in the future.
     try {
       await ajax(`/t/${topicId}/timer`, {
         type: "POST",
         data: {
           status_type: "bump",
-          time: new Date().toISOString(),
+          time: oneMinuteFromNowISO(),
         },
       });
       return;
@@ -69,7 +67,17 @@ export default class AuthorTopicBumpButton extends Component {
       }
     }
 
-    // 3) Last resort endpoint (does not always move topic up to "now").
+    // 2) Optional endpoint exposed by some instances/plugins.
+    try {
+      await ajax(`/t/${topicId}/bump`, { type: "PUT" });
+      return;
+    } catch (error) {
+      if (!shouldTryAlternativeEndpoint(error)) {
+        throw error;
+      }
+    }
+
+    // 3) Legacy/core utility endpoint; may not bump to "now".
     await ajax(`/t/${topicId}/reset-bump-date`, { type: "PUT" });
   }
 

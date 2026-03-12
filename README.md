@@ -6,16 +6,17 @@
 - Показывает кнопку только:
   - в **первом посте темы**;
   - если текущий пользователь — **автор темы**;
-  - если тема не закрыта.
+  - если тема не закрыта;
+  - если у пользователя есть право `canManageTopic`.
 - При нажатии пробует endpoint'ы в таком порядке:
-  1. `PUT /t/:topic_id/bump` (если есть на инстансе/в плагине);
-  2. `POST /t/:topic_id/timer` с `status_type=bump` и `time=now` (core способ автоподнятия);
+  1. `POST /t/:topic_id/timer` с `status_type=bump` и `time=now+1m` (core способ, `time` обязан быть в будущем);
+  2. `PUT /t/:topic_id/bump` (если есть на инстансе/в плагине);
   3. `PUT /t/:topic_id/reset-bump-date` как последний fallback.
 - Во время запроса кнопка блокируется.
 
-## Почему раньше было «200 OK, но ничего не меняется»
-- `reset-bump-date` в core Discourse сбрасывает `bumped_at` к дате последнего поста, а не обязательно поднимает тему «прямо сейчас».
-- Поэтому этот endpoint оставлен только как fallback.
+## Почему была ошибка `Discourse::InvalidParameters`
+- Для `POST /t/:topic_id/timer` с `status_type=bump` параметр `time` должен быть **строго в будущем**.
+- Значение `time=now` дает `400 invalid_parameters`.
 
 ## Технически
 - Используется современный API `registerValueTransformer("post-menu-buttons")` и theme-namespace ключи переводов через `themePrefix(...)`.
