@@ -21,11 +21,9 @@
 - Таймер считается от `topic.bumped_at`.
 - Настройки компонента:
   - `bump_interval_hours_default` — интервал по умолчанию (часы);
-  - `group_bump_intervals` — интервалы по группам в формате:
-    - `group_or_id:hours|group2:hours`
-    - поддерживаются ключи `trust_level_0..4`, `moderators`, `admins`, а также id/slug/name группы
-    - приоритет: `admins` → `moderators` → `trust_level_N` → default
-    - пример: `trust_level_0:72|trust_level_1:48|trust_level_2:24|trust_level_3:12|trust_level_4:6|moderators:1|admins:12`
+  - `group_bump_intervals_structured` — **рекомендуемый** способ: правила через выбор групп форума в UI (`groups` + `interval_hours`);
+  - `group_bump_intervals` — legacy-формат строкой (`group_or_id:hours|...`) для обратной совместимости;
+  - приоритет: `group_bump_intervals_structured` → `admins`/`moderators`/`trust_level_N` из legacy → default;
   - `show_success_modal` — показывать ли модалку после успеха.
 
 ## Важно

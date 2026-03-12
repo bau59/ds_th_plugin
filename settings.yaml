@@ -4,10 +4,26 @@ bump_interval_hours_default:
   min: 0
   description: "Default cooldown (hours) between bump actions. 0 disables cooldown."
 
+group_bump_intervals_structured:
+  default: []
+  type: objects
+  description: "Preferred per-group cooldown rules configured via group picker."
+  schema:
+    name: group_bump_interval
+    properties:
+      groups:
+        type: groups
+        required: true
+      interval_hours:
+        type: integer
+        required: true
+        validations:
+          min: 0
+
 group_bump_intervals:
   default: ""
   type: string
-  description: "Per-group cooldowns in format group_or_id:hours|group2:hours (example: trust_level_2:24|staff:1|42:12)."
+  description: "Legacy format: group_or_id:hours|group2:hours (kept for backward compatibility)."
 
 show_success_modal:
   default: true

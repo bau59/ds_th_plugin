@@ -54,6 +54,38 @@ function parseGroupIntervals(raw) {
   return map;
 }
 
+
+function parseStructuredGroupIntervals(raw) {
+  const rows = Array.isArray(raw)
+    ? raw
+    : (() => {
+        if (!raw || typeof raw !== "string") {
+          return [];
+        }
+
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (_error) {
+          return [];
+        }
+      })();
+
+  return rows
+    .map((row) => {
+      const groups = Array.isArray(row?.groups)
+        ? row.groups.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
+        : [];
+      const intervalHours = Number(row?.interval_hours);
+
+      if (!groups.length || Number.isNaN(intervalHours) || intervalHours < 0) {
+        return null;
+      }
+
+      return { groups, intervalHours };
+    })
+    .filter(Boolean);
+}
 function toNamespacedKey(key) {
   return themePrefix(`author_topic_bump_button.${key}`);
 }
@@ -132,14 +164,34 @@ export default class AuthorTopicBumpButton extends Component {
     return parseGroupIntervals(settings.group_bump_intervals);
   }
 
+  get structuredGroupIntervals() {
+    return parseStructuredGroupIntervals(settings.group_bump_intervals_structured);
+  }
+
   get intervalHours() {
     const defaultHours = Math.max(0, Number(settings.bump_interval_hours_default || 0));
     const user = this.currentUser;
-    const map = this.groupIntervalMap;
 
-    if (!user || map.size === 0) {
+    if (!user) {
       return defaultHours;
     }
+
+    const groups = Array.isArray(user.groups) ? user.groups : [];
+    const userGroupIds = new Set(
+      groups
+        .map((group) => Number(group?.id))
+        .filter((groupId) => Number.isInteger(groupId) && groupId > 0)
+    );
+
+    // preferred UI-driven rules (groups selected from forum group picker)
+    for (const rule of this.structuredGroupIntervals) {
+      if (rule.groups.some((id) => userGroupIds.has(id))) {
+        return rule.intervalHours;
+      }
+    }
+
+    // backward-compatible legacy map
+    const map = this.groupIntervalMap;
 
     // role-based intervals must override trust-level intervals
     if (user.admin && map.has("admins")) {
@@ -157,8 +209,6 @@ export default class AuthorTopicBumpButton extends Component {
         return map.get(tlKey);
       }
     }
-
-    const groups = Array.isArray(user.groups) ? user.groups : [];
 
     for (const group of groups) {
       const candidates = [group?.id, group?.name, group?.full_name, group?.slug]
