@@ -50,8 +50,11 @@ export default class AuthorTopicBumpButton extends Component {
     return themePrefix("author_topic_bump_button.title");
   }
 
+  get successKey() {
+    return themePrefix("author_topic_bump_button.success_scheduled");
+  }
+
   async requestBump(topicId) {
-    // 1) Core Discourse: schedule auto-bump. `time` must be in the future.
     try {
       await ajax(`/t/${topicId}/timer`, {
         type: "POST",
@@ -67,7 +70,6 @@ export default class AuthorTopicBumpButton extends Component {
       }
     }
 
-    // 2) Optional endpoint exposed by some instances/plugins.
     try {
       await ajax(`/t/${topicId}/bump`, { type: "PUT" });
       return;
@@ -77,7 +79,6 @@ export default class AuthorTopicBumpButton extends Component {
       }
     }
 
-    // 3) Legacy/core utility endpoint; may not bump to "now".
     await ajax(`/t/${topicId}/reset-bump-date`, { type: "PUT" });
   }
 
@@ -91,6 +92,7 @@ export default class AuthorTopicBumpButton extends Component {
 
     try {
       await this.requestBump(this.topicId);
+      this.args.showFeedback?.(this.successKey);
     } catch (error) {
       popupAjaxError(error);
     } finally {

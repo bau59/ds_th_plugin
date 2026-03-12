@@ -1,3 +1,4 @@
 en:
   author_topic_bump_button:
     title: "Bump topic"
+    success_scheduled: "Topic bump has been scheduled and will appear soon"
