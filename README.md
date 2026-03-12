@@ -24,6 +24,7 @@
   - `group_bump_intervals` — интервалы по группам в формате:
     - `group_or_id:hours|group2:hours`
     - поддерживаются ключи `trust_level_0..4`, `moderators`, `admins`, а также id/slug/name группы
+    - приоритет: `admins` → `moderators` → `trust_level_N` → default
     - пример: `trust_level_0:72|trust_level_1:48|trust_level_2:24|trust_level_3:12|trust_level_4:6|moderators:1|admins:12`
   - `show_success_modal` — показывать ли модалку после успеха.
 

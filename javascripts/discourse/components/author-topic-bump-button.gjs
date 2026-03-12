@@ -141,20 +141,21 @@ export default class AuthorTopicBumpButton extends Component {
       return defaultHours;
     }
 
-    const trustLevel = Number(user.trust_level);
-    if (Number.isFinite(trustLevel)) {
-      const tlKey = `trust_level_${trustLevel}`;
-      if (map.has(tlKey)) {
-        return map.get(tlKey);
-      }
-    }
-
+    // role-based intervals must override trust-level intervals
     if (user.admin && map.has("admins")) {
       return map.get("admins");
     }
 
     if ((user.moderator || user.staff) && map.has("moderators")) {
       return map.get("moderators");
+    }
+
+    const trustLevel = Number(user.trust_level);
+    if (Number.isFinite(trustLevel)) {
+      const tlKey = `trust_level_${trustLevel}`;
+      if (map.has(tlKey)) {
+        return map.get(tlKey);
+      }
     }
 
     const groups = Array.isArray(user.groups) ? user.groups : [];
