@@ -1,0 +1,6 @@
+ru:
+  js:
+    author_topic_bump_button:
+      bump: "Поднять"
+      loading: "Поднимаем..."
+      bumped: "Поднято"
