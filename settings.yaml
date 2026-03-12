@@ -1,0 +1,15 @@
+bump_interval_hours_default:
+  default: 0
+  type: integer
+  min: 0
+  description: "Default cooldown (hours) between bump actions. 0 disables cooldown."
+
+group_bump_intervals:
+  default: ""
+  type: string
+  description: "Per-group cooldowns in format group_or_id:hours|group2:hours (example: trust_level_2:24|staff:1|42:12)."
+
+show_success_modal:
+  default: true
+  type: bool
+  description: "Show a modal confirmation after a successful bump request."
