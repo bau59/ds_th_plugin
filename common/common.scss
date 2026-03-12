@@ -1,0 +1,8 @@
+.post-controls .author-topic-bump-button[disabled] {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.post-controls .author-topic-bump-button.is-cooldown {
+  min-width: 6.5rem;
+}

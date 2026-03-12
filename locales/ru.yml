@@ -1,0 +1,7 @@
+ru:
+  author_topic_bump_button:
+    title: "Поднять тему"
+    success_scheduled: "Тема будет поднята в ленте в ближайшее время"
+    success_modal: "Поднятие темы запланировано. В списке тем она поднимется в ближайшее время."
+    cooldown_title: "Следующее поднятие будет доступно позже"
+    cooldown_label: "Через %{time}"

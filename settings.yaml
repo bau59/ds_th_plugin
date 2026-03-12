@@ -1,0 +1,41 @@
+bump_interval_hours_default:
+  default: 0
+  type: integer
+  min: 0
+  description: "Default cooldown (hours) between bump actions. 0 disables cooldown."
+
+admin_bump_interval_hours:
+  default: -1
+  type: integer
+  min: -1
+  description: "Admin cooldown in hours. -1 means fallback to group/default rules."
+
+moderator_bump_interval_hours:
+  default: -1
+  type: integer
+  min: -1
+  description: "Moderator cooldown in hours. -1 means fallback to group/default rules."
+
+group_bump_intervals_structured:
+  default: []
+  type: objects
+  description: "One group per row: select group and interval hours."
+  schema:
+    name: group_bump_interval
+    properties:
+      groups:
+        type: groups
+        required: true
+        validations:
+          min: 1
+          max: 1
+      interval_hours:
+        type: integer
+        required: true
+        validations:
+          min: 0
+
+show_success_modal:
+  default: true
+  type: bool
+  description: "Show a modal confirmation after a successful bump request."
