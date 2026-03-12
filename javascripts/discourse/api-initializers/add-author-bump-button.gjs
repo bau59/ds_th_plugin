@@ -1,73 +1,25 @@
 import { apiInitializer } from "discourse/lib/api";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
-import I18n from "I18n";
 
-function updateButtonState(button, isLoading) {
-  button.disabled = isLoading;
-  button.classList.toggle("is-loading", isLoading);
+const loadingTopicIds = new Set();
 
-  if (isLoading) {
-    button.dataset.defaultLabel = button.textContent;
-    button.textContent = I18n.t("author_topic_bump_button.loading");
-  } else {
-    button.textContent = button.dataset.defaultLabel || I18n.t("author_topic_bump_button.bump");
+function canShowBumpButton(attrs, currentUsername) {
+  if (!currentUsername || !attrs?.firstPost) {
+    return false;
   }
+
+  const postAuthor = attrs.username || attrs?.user?.username;
+  if (!postAuthor || postAuthor !== currentUsername) {
+    return false;
+  }
+
+  const topicClosed = attrs.topic_closed || attrs?.topic?.closed;
+  return !topicClosed;
 }
 
-async function bumpTopic(button) {
-  const topicId = button.dataset.topicId;
-  if (!topicId) {
-    return;
-  }
-
-  updateButtonState(button, true);
-
-  try {
-    await ajax(`/t/${topicId}/bump`, { type: "PUT" });
-    button.textContent = I18n.t("author_topic_bump_button.bumped");
-
-    setTimeout(() => {
-      button.textContent = button.dataset.defaultLabel || I18n.t("author_topic_bump_button.bump");
-      button.disabled = false;
-      button.classList.remove("is-loading");
-    }, 1800);
-  } catch (error) {
-    updateButtonState(button, false);
-    popupAjaxError(error);
-  }
-}
-
-function attachButtons(currentUsername) {
-  document.querySelectorAll("tr.topic-list-item").forEach((row) => {
-    if (row.dataset.authorBumpReady === "true") {
-      return;
-    }
-
-    const topicId = row.dataset.topicId;
-    const authorLink = row.querySelector("td.posters a[data-user-card]");
-    const actionsCell = row.querySelector("td.posters");
-
-    if (!topicId || !authorLink || !actionsCell) {
-      return;
-    }
-
-    const authorUsername = authorLink.dataset.userCard;
-    if (!authorUsername || authorUsername !== currentUsername) {
-      return;
-    }
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn btn-icon-text author-topic-bump-button";
-    button.dataset.topicId = topicId;
-    button.textContent = I18n.t("author_topic_bump_button.bump");
-
-    button.addEventListener("click", () => bumpTopic(button));
-
-    actionsCell.appendChild(button);
-    row.dataset.authorBumpReady = "true";
-  });
+function extractTopicId(attrs) {
+  return attrs?.topic_id || attrs?.topic?.id;
 }
 
 export default apiInitializer("1.14.0", (api) => {
@@ -77,9 +29,44 @@ export default apiInitializer("1.14.0", (api) => {
     return;
   }
 
-  api.onPageChange(() => {
-    attachButtons(currentUser.username);
-    requestAnimationFrame(() => attachButtons(currentUser.username));
-    setTimeout(() => attachButtons(currentUser.username), 500);
+  api.addPostMenuButton("author-topic-bump", (attrs) => {
+    if (!canShowBumpButton(attrs, currentUser.username)) {
+      return null;
+    }
+
+    const topicId = extractTopicId(attrs);
+    if (!topicId) {
+      return null;
+    }
+
+    const isLoading = loadingTopicIds.has(topicId);
+
+    return {
+      action: "authorTopicBump",
+      icon: isLoading ? "spinner" : "arrow-up",
+      className: `author-topic-bump-button ${isLoading ? "is-loading" : ""}`,
+      title: "author_topic_bump_button.title",
+      position: "first",
+    };
+  });
+
+  api.attachWidgetAction("post", "authorTopicBump", async function () {
+    const topicId = extractTopicId(this.attrs);
+
+    if (!topicId || loadingTopicIds.has(topicId)) {
+      return;
+    }
+
+    loadingTopicIds.add(topicId);
+    this.scheduleRerender();
+
+    try {
+      await ajax(`/t/${topicId}/bump`, { type: "PUT" });
+    } catch (error) {
+      popupAjaxError(error);
+    } finally {
+      loadingTopicIds.delete(topicId);
+      this.scheduleRerender();
+    }
   });
 });

@@ -1,6 +1,4 @@
 en:
   js:
     author_topic_bump_button:
-      bump: "Bump"
-      loading: "Bumping..."
-      bumped: "Bumped"
+      title: "Bump topic"
