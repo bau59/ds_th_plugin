@@ -29,6 +29,45 @@ function oneMinuteFromNowISO() {
   return new Date(Date.now() + 60 * 1000).toISOString();
 }
 
+
+function parseStructuredUserIntervals(raw) {
+  const rows = Array.isArray(raw)
+    ? raw
+    : (() => {
+        if (!raw || typeof raw !== "string") {
+          return [];
+        }
+
+        try {
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (_error) {
+          return [];
+        }
+      })();
+
+  const seenUsernames = new Set();
+
+  return rows
+    .map((row) => {
+      const username = String(row?.username || "").trim().toLowerCase();
+      const intervalHours = Number(row?.interval_hours);
+
+      if (!username || Number.isNaN(intervalHours) || intervalHours < 0) {
+        return null;
+      }
+
+      // one effective value per username (first rule wins)
+      if (seenUsernames.has(username)) {
+        return null;
+      }
+
+      seenUsernames.add(username);
+      return { username, intervalHours };
+    })
+    .filter(Boolean);
+}
+
 function parseStructuredGroupIntervals(raw) {
   const rows = Array.isArray(raw)
     ? raw
@@ -143,6 +182,18 @@ export default class AuthorTopicBumpButton extends Component {
     });
   }
 
+  get structuredUserIntervals() {
+    return parseStructuredUserIntervals(settings.user_bump_intervals_structured);
+  }
+
+  get structuredUserIntervalMap() {
+    // one effective value per user (duplicates ignored)
+    return this.structuredUserIntervals.reduce((map, row) => {
+      map.set(row.username, row.intervalHours);
+      return map;
+    }, new Map());
+  }
+
   get structuredGroupIntervals() {
     return parseStructuredGroupIntervals(settings.group_bump_intervals_structured);
   }
@@ -178,6 +229,13 @@ export default class AuthorTopicBumpButton extends Component {
 
     if ((user.moderator || user.staff) && this.moderatorIntervalHours >= 0) {
       return this.moderatorIntervalHours;
+    }
+
+    // user-specific rules
+    const username = String(user.username || "").toLowerCase();
+    const userMap = this.structuredUserIntervalMap;
+    if (username && userMap.has(username)) {
+      return userMap.get(username);
     }
 
     const groups = Array.isArray(user.groups) ? user.groups : [];

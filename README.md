@@ -23,17 +23,17 @@
   - `bump_interval_hours_default` — интервал по умолчанию (часы);
   - `admin_bump_interval_hours` — интервал для админов (`-1` = не переопределять);
   - `moderator_bump_interval_hours` — интервал для модераторов (`-1` = не переопределять);
+  - `user_bump_intervals_structured` — индивидуальные правила (username + часы);
   - `group_bump_intervals_structured` — по одной группе на правило (группа + часы);
-<<<<<<< codex/add-topic-raise-button-for-authors-wxd597
-    - если одна и та же группа добавлена несколько раз, применяется только первое правило для этой группы;
-=======
->>>>>>> main
+   - если одна и та же группа добавлена несколько раз, применяется только первое правило для этой группы;
+
   - `show_success_modal` — показывать ли модалку после успеха.
 - Приоритет интервалов:
   1. `admin_bump_interval_hours` (если пользователь админ и значение >= 0)
   2. `moderator_bump_interval_hours` (если пользователь модератор/staff и значение >= 0)
-  3. `group_bump_intervals_structured`
-  4. `bump_interval_hours_default`
+  3. `user_bump_intervals_structured`
+  4. `group_bump_intervals_structured`
+  5. `bump_interval_hours_default`
 
 ## Важно
 - Для `POST /t/:topic_id/timer` параметр `time` должен быть строго в будущем.
