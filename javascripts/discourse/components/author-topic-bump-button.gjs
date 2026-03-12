@@ -58,16 +58,23 @@ function toNamespacedKey(key) {
   return themePrefix(`author_topic_bump_button.${key}`);
 }
 
+function localStorageKey(topicId) {
+  return `author-topic-bump:last-bump-ms:${topicId}`;
+}
+
 export default class AuthorTopicBumpButton extends Component {
   @service dialog;
 
   @tracked isLoading = false;
   @tracked nowMs = Date.now();
+  @tracked localLastBumpMs = null;
 
   #tickHandle;
 
   constructor() {
     super(...arguments);
+
+    this.localLastBumpMs = this.readLocalLastBumpMs();
 
     this.#tickHandle = setInterval(() => {
       this.nowMs = Date.now();
@@ -126,11 +133,28 @@ export default class AuthorTopicBumpButton extends Component {
   }
 
   get intervalHours() {
-    const defaultHours = Number(settings.bump_interval_hours_default || 0);
+    const defaultHours = Math.max(0, Number(settings.bump_interval_hours_default || 0));
     const user = this.currentUser;
+    const map = this.groupIntervalMap;
 
-    if (!user) {
-      return Math.max(0, defaultHours);
+    if (!user || map.size === 0) {
+      return defaultHours;
+    }
+
+    const trustLevel = Number(user.trust_level);
+    if (Number.isFinite(trustLevel)) {
+      const tlKey = `trust_level_${trustLevel}`;
+      if (map.has(tlKey)) {
+        return map.get(tlKey);
+      }
+    }
+
+    if (user.admin && map.has("admins")) {
+      return map.get("admins");
+    }
+
+    if ((user.moderator || user.staff) && map.has("moderators")) {
+      return map.get("moderators");
     }
 
     const groups = Array.isArray(user.groups) ? user.groups : [];
@@ -141,21 +165,21 @@ export default class AuthorTopicBumpButton extends Component {
         .map((value) => String(value).toLowerCase());
 
       for (const candidate of candidates) {
-        if (this.groupIntervalMap.has(candidate)) {
-          return this.groupIntervalMap.get(candidate);
+        if (map.has(candidate)) {
+          return map.get(candidate);
         }
       }
     }
 
-    return Math.max(0, defaultHours);
+    return defaultHours;
   }
 
   get intervalMs() {
     return this.intervalHours * 60 * 60 * 1000;
   }
 
-  get lastBumpedMs() {
-    const bumpedAt = this.args.post?.topic?.bumped_at;
+  get topicBumpedMs() {
+    const bumpedAt = this.args.post?.topic?.bumped_at || this.args.post?.topic?.last_posted_at;
 
     if (!bumpedAt) {
       return null;
@@ -165,12 +189,20 @@ export default class AuthorTopicBumpButton extends Component {
     return Number.isFinite(ms) ? ms : null;
   }
 
+  get effectiveLastBumpMs() {
+    if (this.topicBumpedMs && this.localLastBumpMs) {
+      return Math.max(this.topicBumpedMs, this.localLastBumpMs);
+    }
+
+    return this.topicBumpedMs || this.localLastBumpMs;
+  }
+
   get remainingMs() {
-    if (!this.intervalMs || !this.lastBumpedMs) {
+    if (!this.intervalMs || !this.effectiveLastBumpMs) {
       return 0;
     }
 
-    const nextAllowedMs = this.lastBumpedMs + this.intervalMs;
+    const nextAllowedMs = this.effectiveLastBumpMs + this.intervalMs;
     return Math.max(0, nextAllowedMs - this.nowMs);
   }
 
@@ -189,6 +221,29 @@ export default class AuthorTopicBumpButton extends Component {
     }
 
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  readLocalLastBumpMs() {
+    if (!this.topicId) {
+      return null;
+    }
+
+    const value = localStorage.getItem(localStorageKey(this.topicId));
+    if (!value) {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  writeLocalLastBumpMs(valueMs) {
+    if (!this.topicId) {
+      return;
+    }
+
+    localStorage.setItem(localStorageKey(this.topicId), String(valueMs));
+    this.localLastBumpMs = valueMs;
   }
 
   async requestBump(topicId) {
@@ -229,6 +284,7 @@ export default class AuthorTopicBumpButton extends Component {
 
     try {
       await this.requestBump(this.topicId);
+      this.writeLocalLastBumpMs(Date.now());
       this.args.showFeedback?.(this.successKey);
 
       if (settings.show_success_modal) {

@@ -23,8 +23,13 @@
   - `bump_interval_hours_default` — интервал по умолчанию (часы);
   - `group_bump_intervals` — интервалы по группам в формате:
     - `group_or_id:hours|group2:hours`
-    - пример: `trust_level_2:24|staff:1|42:12`
+    - поддерживаются ключи `trust_level_0..4`, `moderators`, `admins`, а также id/slug/name группы
+    - пример: `trust_level_0:72|trust_level_1:48|trust_level_2:24|trust_level_3:12|trust_level_4:6|moderators:1|admins:12`
   - `show_success_modal` — показывать ли модалку после успеха.
 
 ## Важно
 - Для `POST /t/:topic_id/timer` параметр `time` должен быть строго в будущем.
+
+
+## Примечание по надежности таймера
+- В topic-view не всегда приходит `bumped_at`, поэтому компонент использует `last_posted_at` как fallback и локально запоминает время последнего успешного поднятия для текущего топика (в `localStorage`), чтобы cooldown/таймер срабатывал сразу.
