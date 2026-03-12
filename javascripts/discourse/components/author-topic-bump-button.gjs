@@ -1,9 +1,19 @@
 import Component from "@glimmer/component";
 import { tracked } from "@glimmer/tracking";
 import { action } from "@ember/object";
+import { themePrefix } from "virtual:theme";
 import DButton from "discourse/components/d-button";
 import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
+
+function responseStatus(error) {
+  return (
+    error?.status ||
+    error?.jqXHR?.status ||
+    error?.responseJSON?.status ||
+    error?.response?.status
+  );
+}
 
 export default class AuthorTopicBumpButton extends Component {
   @tracked isLoading = false;
@@ -21,12 +31,16 @@ export default class AuthorTopicBumpButton extends Component {
     return this.args.post?.topic_id || this.args.post?.topic?.id;
   }
 
+  get titleKey() {
+    return themePrefix("author_topic_bump_button.title");
+  }
+
   async requestBump(topicId) {
     try {
       await ajax(`/t/${topicId}/bump`, { type: "PUT" });
       return;
     } catch (error) {
-      if (error?.jqXHR?.status !== 404) {
+      if (responseStatus(error) !== 404) {
         throw error;
       }
     }
@@ -58,7 +72,7 @@ export default class AuthorTopicBumpButton extends Component {
       @action={{this.bumpTopic}}
       @disabled={{this.isLoading}}
       @icon={{if this.isLoading "spinner" "arrow-up"}}
-      @title="js.author_topic_bump_button.title"
+      @title={{this.titleKey}}
     />
   </template>
 }

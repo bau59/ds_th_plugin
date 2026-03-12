@@ -12,7 +12,7 @@
 - Во время запроса кнопка блокируется.
 
 ## Технически
-- Используется современный API `registerValueTransformer("post-menu-buttons")`.
+- Используется современный API `registerValueTransformer("post-menu-buttons")` и theme-namespace ключи переводов через `themePrefix(...)`.
 - Устаревший widget API не используется (исправление предупреждения `discourse.widgets-decommissioned`).
 
 ## Установка
