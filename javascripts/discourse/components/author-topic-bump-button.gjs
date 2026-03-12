@@ -7,12 +7,19 @@ import { ajax } from "discourse/lib/ajax";
 import { popupAjaxError } from "discourse/lib/ajax-error";
 
 function responseStatus(error) {
-  return (
+  const status =
     error?.status ||
     error?.jqXHR?.status ||
     error?.responseJSON?.status ||
-    error?.response?.status
-  );
+    error?.response?.status;
+
+  return Number(status);
+}
+
+function shouldTryAlternativeEndpoint(error) {
+  const status = responseStatus(error);
+
+  return status === 403 || status === 404 || status === 405;
 }
 
 export default class AuthorTopicBumpButton extends Component {
@@ -36,16 +43,18 @@ export default class AuthorTopicBumpButton extends Component {
   }
 
   async requestBump(topicId) {
+    // Core Discourse endpoint (present in modern versions)
     try {
-      await ajax(`/t/${topicId}/bump`, { type: "PUT" });
+      await ajax(`/t/${topicId}/reset-bump-date`, { type: "PUT" });
       return;
     } catch (error) {
-      if (responseStatus(error) !== 404) {
+      if (!shouldTryAlternativeEndpoint(error)) {
         throw error;
       }
     }
 
-    await ajax(`/t/${topicId}/reset-bump-date`, { type: "PUT" });
+    // Optional/plugin-specific endpoint (not present on many instances)
+    await ajax(`/t/${topicId}/bump`, { type: "PUT" });
   }
 
   @action
