@@ -22,8 +22,7 @@
 - Настройки компонента:
   - `bump_interval_hours_default` — интервал по умолчанию (часы);
   - `group_bump_intervals_structured` — **рекомендуемый** способ: правила через выбор групп форума в UI (`groups` + `interval_hours`);
-  - `group_bump_intervals` — legacy-формат строкой (`group_or_id:hours|...`) для обратной совместимости;
-  - приоритет: `group_bump_intervals_structured` → `admins`/`moderators`/`trust_level_N` из legacy → default;
+  - приоритет: `group_bump_intervals_structured` → default;
   - `show_success_modal` — показывать ли модалку после успеха.
 
 ## Важно

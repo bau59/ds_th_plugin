@@ -20,10 +20,6 @@ group_bump_intervals_structured:
         validations:
           min: 0
 
-group_bump_intervals:
-  default: ""
-  type: string
-  description: "Legacy format: group_or_id:hours|group2:hours (kept for backward compatibility)."
 
 show_success_modal:
   default: true

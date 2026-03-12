@@ -29,32 +29,6 @@ function oneMinuteFromNowISO() {
   return new Date(Date.now() + 60 * 1000).toISOString();
 }
 
-function parseGroupIntervals(raw) {
-  const map = new Map();
-
-  if (!raw) {
-    return map;
-  }
-
-  raw
-    .split("|")
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .forEach((entry) => {
-      const [groupKey, hoursRaw] = entry.split(":").map((part) => part?.trim());
-      const hours = Number(hoursRaw);
-
-      if (!groupKey || Number.isNaN(hours) || hours < 0) {
-        return;
-      }
-
-      map.set(groupKey.toLowerCase(), hours);
-    });
-
-  return map;
-}
-
-
 function parseStructuredGroupIntervals(raw) {
   const rows = Array.isArray(raw)
     ? raw
@@ -160,10 +134,6 @@ export default class AuthorTopicBumpButton extends Component {
     });
   }
 
-  get groupIntervalMap() {
-    return parseGroupIntervals(settings.group_bump_intervals);
-  }
-
   get structuredGroupIntervals() {
     return parseStructuredGroupIntervals(settings.group_bump_intervals_structured);
   }
@@ -187,38 +157,6 @@ export default class AuthorTopicBumpButton extends Component {
     for (const rule of this.structuredGroupIntervals) {
       if (rule.groups.some((id) => userGroupIds.has(id))) {
         return rule.intervalHours;
-      }
-    }
-
-    // backward-compatible legacy map
-    const map = this.groupIntervalMap;
-
-    // role-based intervals must override trust-level intervals
-    if (user.admin && map.has("admins")) {
-      return map.get("admins");
-    }
-
-    if ((user.moderator || user.staff) && map.has("moderators")) {
-      return map.get("moderators");
-    }
-
-    const trustLevel = Number(user.trust_level);
-    if (Number.isFinite(trustLevel)) {
-      const tlKey = `trust_level_${trustLevel}`;
-      if (map.has(tlKey)) {
-        return map.get(tlKey);
-      }
-    }
-
-    for (const group of groups) {
-      const candidates = [group?.id, group?.name, group?.full_name, group?.slug]
-        .filter(Boolean)
-        .map((value) => String(value).toLowerCase());
-
-      for (const candidate of candidates) {
-        if (map.has(candidate)) {
-          return map.get(candidate);
-        }
       }
     }
 
