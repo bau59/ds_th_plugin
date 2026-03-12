@@ -1,0 +1,9 @@
+.author-topic-bump-button {
+  margin-top: 0.35rem;
+  width: 100%;
+
+  &.is-loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+}
